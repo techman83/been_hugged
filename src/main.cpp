@@ -15,9 +15,7 @@
 #include <FastLED.h>
 
 
-#define RANGE_PIN A0
-char GP2D12;
-char a,b;
+#define IR_PIN D0
 unsigned long huggedTime = 0;
 int hugTicks = 0;
 volatile bool hugStuck = false;
@@ -105,12 +103,14 @@ void setup() {
   }
 
   Serial.println("Proceeding");
+  // Set Pin mode for IR Sensor
+  pinMode(IR_PIN, INPUT);
 
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname(CLIENT_ID);
-  //ArduinoOTA.setPassword(OTA_PASS);
+  ArduinoOTA.setPassword(OTA_PASS);
 
-  client.setServer(MQTT, 1883);
+  client.setServer(MQTT, 12839);
   client.setCallback(callback);
 
   ArduinoOTA.onStart([]() {
@@ -160,96 +160,81 @@ void reconnect() {
   }
 }
 
-float read_gp2d12_range(byte pin)
-{
-  int tmp;
-  tmp = analogRead(pin);
-  if (tmp < 3)return -1;
-  return (13574.0 /((float)tmp - 3.0)) - 4.0;
-}
-
 void is_it_me() {
   unsigned long timeNow = millis();
   if (timeNow >= huggedTime && hugStuck == false) {
-    huggedTime = timeNow + 100;
-    int val;
-    int i;
-    GP2D12=read_gp2d12_range(RANGE_PIN);
-    a=GP2D12/10;
-    b=GP2D12%10;
-    val=a*10+b;
-
-    if(val>10 && val<80)
-    {
-      Serial.print(a,DEC);
-      Serial.print(b,DEC);
-      Serial.println("cm");
-    }
+    //Serial.println("tick start");
+    int ir = digitalRead(IR_PIN);
 
     // (Potential)? Hug cleared
-    if (val>30)
+    if (hugTicks == 0 && hugs == true)
     {
-      Serial.println("(Potential)? Hug cleared");
       hugs = false;
-      hugTicks = 0;
-      for(i = 0; i <= NUM_LEDS; i++)
-      {
-        leds[i] = CRGB::Black;
-        FastLED.show();
-      }
+      //int i;
+      Serial.println("(Potential)? Hug cleared");
+      //for(i = 0; i <= NUM_LEDS; i++)
+      //{
+      //  leds[i] = CRGB::Black;
+      //  FastLED.show();
+      //}
     }
 
     // I've been hugged!
-    if (hugTicks == 15)
+    if (hugTicks == 8 && hugs == false)
     {
+      hugs = true;
       Serial.println("I've been hugged <3");
       client.publish("/hugged", "true");
     }
 
     // Oh noes I'm potentially stuck in a hug!
     // (more likely my badge is obstructed... or my hacky code)
-    if (hugTicks == 100)
+    if (hugTicks == 50)
     {
-      CHSV hsv( 0, 255, 255);
-      for(i = 0; i <= NUM_LEDS; i++)
-      {
-        leds[i] = hsv;
-        FastLED.show();
+      int i;
+      for(i = 0; i <= NUM_LEDS; i++) {
+      	leds[i] = CRGB::Red;
+      	leds[i].maximizeBrightness();
+      	leds[i].fadeLightBy( 224 );
+      	FastLED.show();
       }
+
+      hugStuck = true;
       Serial.println("Ack! I'm stuck!");
       client.publish("/stuck", "true");
     }
 
-    if (val>=15 && val<25 )
+    if( ir == 0 )
     {
-      Serial.println("Potential hug inbound");
-      hugs = true;
-    }
-
-    if(hugs == true && val<15)
-    {
-      Serial.println("Hug tick");
+      Serial.println("Hug tick increase");
       hugTicks += 1;
 
       int saturation;
       if (hugTicks < 50)
       {
-        saturation = hugTicks * 5;
+        saturation = hugTicks;
       }
       else
       {
         saturation = 255;
       }
-
-      CHSV hsv( 160, saturation, 255);
-      for(i = 0; i <= NUM_LEDS; i++)
-      {
-        leds[i] = hsv;
-        FastLED.show();
-      }
-      // As soon as I call FastLED.show hugs reverts to false.
-      hugs = true; // TODO: I don't even know why this is necessary
+     
+      // NFI Why but fastlead blows out the global variables :( 
+      //int i;
+      //CHSV hsv( 160, saturation, 255);
+      //for(i = 0; i <= NUM_LEDS; i++)
+      //{
+      //  leds[i] = hsv;
+      //  FastLED.show();
+      //}
     }
+    if( ir == 1 && hugTicks > 0)
+    {
+      Serial.println("Hug tick decrease");
+      hugTicks -= 1;
+    }
+    //Serial.println("tick end");
+    huggedTime = timeNow + 100;
   }
 }
 
