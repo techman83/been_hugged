@@ -63,7 +63,7 @@ void led_startup() {
   FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
 
   // Scan red, then green, then blue across the LEDs
-  for(int i = 0; i <= NUM_LEDS; i++)
+  for(int i = 0; i < NUM_LEDS; i++)
   {
     leds[i] = CRGB::Red;
     FastLED.show();
@@ -71,7 +71,7 @@ void led_startup() {
     leds[i] = CRGB::Black;
     FastLED.show();
   }
-  for(int i = 0; i <= NUM_LEDS; i++)
+  for(int i = 0; i < NUM_LEDS; i++)
   {
     leds[i] = CRGB::Green;
     FastLED.show();
@@ -79,7 +79,7 @@ void led_startup() {
     leds[i] = CRGB::Black;
     FastLED.show();
   }
-  for(int i = 0; i <= NUM_LEDS; i++)
+  for(int i = 0; i < NUM_LEDS; i++)
   {
     leds[i] = CRGB::Blue;
     FastLED.show();
@@ -135,7 +135,6 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   led_startup();
-  delay(2000);
 }
 
 void reconnect() {
@@ -170,13 +169,13 @@ void is_it_me() {
     if (hugTicks == 0 && hugs == true)
     {
       hugs = false;
-      //int i;
+      int i;
       Serial.println("(Potential)? Hug cleared");
-      //for(i = 0; i <= NUM_LEDS; i++)
-      //{
-      //  leds[i] = CRGB::Black;
-      //  FastLED.show();
-      //}
+      for(i = 0; i < NUM_LEDS; i++)
+      {
+        leds[i] = CRGB::Black;
+        FastLED.show();
+      }
     }
 
     // I've been hugged!
@@ -192,10 +191,9 @@ void is_it_me() {
     if (hugTicks == 50)
     {
       int i;
-      for(i = 0; i <= NUM_LEDS; i++) {
-      	leds[i] = CRGB::Red;
-      	leds[i].maximizeBrightness();
-      	leds[i].fadeLightBy( 224 );
+      CHSV hsv( 0, 255, 200);
+      for(i = 0; i < NUM_LEDS; i++) {
+        leds[i] = hsv;
       	FastLED.show();
       }
 
@@ -209,24 +207,25 @@ void is_it_me() {
       Serial.println("Hug tick increase");
       hugTicks += 1;
 
-      int saturation;
-      if (hugTicks < 50)
+      int brightness;
+      if (hugTicks < 20)
       {
-        saturation = hugTicks;
+        brightness = hugTicks * 10;
       }
       else
       {
-        saturation = 255;
+        brightness = 200;
       }
      
-      // NFI Why but fastlead blows out the global variables :( 
-      //int i;
-      //CHSV hsv( 160, saturation, 255);
-      //for(i = 0; i <= NUM_LEDS; i++)
-      //{
-      //  leds[i] = hsv;
-      //  FastLED.show();
-      //}
+      // @projectgus debugged my code. Iterating past the end of the list
+      // will corrupt memory.
+      int i;
+      CHSV hsv( 160, 255, brightness);
+      for(i = 0; i < NUM_LEDS; i++)
+      {
+        leds[i] = hsv;
+        FastLED.show();
+      }
     }
     if( ir == 1 && hugTicks > 0)
     {
