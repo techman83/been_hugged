@@ -169,8 +169,12 @@ void is_it_me() {
     if (hugTicks == 0 && hugs == true)
     {
       hugs = false;
-      int i;
       Serial.println("(Potential)? Hug cleared");
+    }
+   
+    if (hugTicks == 0)
+    {
+      int i;
       for(i = 0; i < NUM_LEDS; i++)
       {
         leds[i] = CRGB::Black;
@@ -179,7 +183,7 @@ void is_it_me() {
     }
 
     // I've been hugged!
-    if (hugTicks == 8 && hugs == false)
+    if (hugTicks == 7 && hugs == false)
     {
       hugs = true;
       Serial.println("I've been hugged <3");
@@ -200,6 +204,7 @@ void is_it_me() {
       hugStuck = true;
       Serial.println("Ack! I'm stuck!");
       client.publish("/stuck", "true");
+      return;
     }
 
     if( ir == 0 )
@@ -208,13 +213,13 @@ void is_it_me() {
       hugTicks += 1;
 
       int brightness;
-      if (hugTicks < 20)
+      if (hugTicks < 15)
       {
-        brightness = hugTicks * 10;
+        brightness = hugTicks * 9;
       }
       else
       {
-        brightness = 200;
+        brightness = 150;
       }
      
       // @projectgus debugged my code. Iterating past the end of the list
@@ -231,6 +236,27 @@ void is_it_me() {
     {
       Serial.println("Hug tick decrease");
       hugTicks -= 1;
+     
+      // All the conference hackiness :D
+      if (hugs = false) {
+        int brightness;
+        if (hugTicks < 15)
+        {
+          brightness = hugTicks * 9;
+        }
+        else
+        {
+          brightness = 150;
+        }
+        
+        int i;
+        CHSV hsv( 160, 255, brightness);
+        for(i = 0; i < NUM_LEDS; i++)
+        {
+          leds[i] = hsv;
+          FastLED.show();
+        }
+      }
     }
     //Serial.println("tick end");
     huggedTime = timeNow + 100;
