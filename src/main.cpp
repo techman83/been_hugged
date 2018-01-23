@@ -16,6 +16,7 @@ unsigned long huggedTime = 0;
 int hugTicks = 0;
 int hugsPotential = 0;
 int lastRange = 0;
+int ledPin = 22;
 volatile bool hugStuck = false;
 volatile bool hugs = false;
 
@@ -116,10 +117,15 @@ void setup() {
     else if (error == OTA_END_ERROR    ) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-  Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   sensor_init();
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+  delay(500);
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+  Serial.println("Ready");
 }
 
 void reconnect() {
@@ -145,9 +151,11 @@ void reconnect() {
 }
 
 void is_it_me() {
+  if (hugStuck)
+    return;
+
   unsigned long timeNow = millis();
-  if (timeNow >= huggedTime && hugStuck == false) {
-    //Serial.println("tick start");
+  if (timeNow >= huggedTime) {
     int range = sensor.readRangeContinuousMillimeters();
     lastRange = range;
 
@@ -163,15 +171,19 @@ void is_it_me() {
     {
       hugs = false;
       hugsPotential = 0;
+      digitalWrite(ledPin, HIGH);
       Serial.println("(Potential)? Hug cleared");
     }
    
     // I've been hugged!
-    if (hugTicks == 10 && hugs == false)
+    if (hugTicks == 7 && hugs == false)
     {
       hugs = true;
       Serial.println("I've been hugged <3");
       client.publish("/hugged", "true");
+      digitalWrite(ledPin, LOW);
+      huggedTime = timeNow + 10000;
+      return;
     }
 
     // Oh noes I'm potentially stuck in a hug!
