@@ -10,21 +10,14 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
-#include <FastLED.h>
-#include "Adafruit_VL6180X.h"
+#include <VL6180X.h>
 
 unsigned long huggedTime = 0;
 int hugTicks = 0;
+int hugsPotential = 0;
+int lastRange = 0;
 volatile bool hugStuck = false;
-#define SDIO 19
-#define SCL 23
-
-// WS2812 / FASTLED Config
-//#define NUM_LEDS 2
-//#define DATA_PIN  D2
-//uint32_t ledPosition = 0;
-//volatile boolean hugs = false;
-//CRGB leds[NUM_LEDS];    // Define the array of leds
+volatile bool hugs = false;
 
 /* MQTT Settings */
 #define BUFFER_SIZE 100
@@ -54,40 +47,35 @@ void callback(char* topic, byte* payload, unsigned int length)
 
 WiFiClient wificlient;
 PubSubClient client(wificlient);
-Adafruit_VL6180X vl = Adafruit_VL6180X();
+VL6180X sensor;
 
 /**
  * Setup
  */
-//void led_startup() {
-//  FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
-//
-//  // Scan red, then green, then blue across the LEDs
-//  for(int i = 0; i < NUM_LEDS; i++)
-//  {
-//    leds[i] = CRGB::Red;
-//    FastLED.show();
-//    delay(200);
-//    leds[i] = CRGB::Black;
-//    FastLED.show();
-//  }
-//  for(int i = 0; i < NUM_LEDS; i++)
-//  {
-//    leds[i] = CRGB::Green;
-//    FastLED.show();
-//    delay(200);
-//    leds[i] = CRGB::Black;
-//    FastLED.show();
-//  }
-//  for(int i = 0; i < NUM_LEDS; i++)
-//  {
-//    leds[i] = CRGB::Blue;
-//    FastLED.show();
-//    delay(200);
-//    leds[i] = CRGB::Black;
-//    FastLED.show();
-//  }
-//}
+void sensor_init()
+{
+  delay(2000);
+  sensor.init();
+  sensor.configureDefault();
+  Serial.println( "Sensor Config..." );
+
+  // Reduce range max convergence time and ALS integration
+  // time to 30 ms and 50 ms, respectively, to allow 10 Hz
+  // operation (as suggested by Table 6 ("Interleaved mode
+  // limits (10 Hz operation)") in the datasheet).
+  sensor.writeReg(VL6180X::SYSRANGE__MAX_CONVERGENCE_TIME, 30);
+  sensor.writeReg16Bit(VL6180X::SYSALS__INTEGRATION_PERIOD, 50);
+
+  sensor.setTimeout(500);
+
+   // stop continuous mode if already active
+  sensor.stopContinuous();
+  // in case stopContinuous() triggered a single-shot
+  // measurement, wait for it to complete
+  delay(300);
+  // start interleaved continuous mode with period of 100 ms
+  sensor.startInterleavedContinuous(100);
+}
 
 void setup() {
   Serial.begin(115200);
@@ -100,16 +88,8 @@ void setup() {
     ESP.restart();
   }
 
-  // SDA 19, SCL 23
-  pinMode(SDIO, OUTPUT);
-  digitalWrite(SDIO, SCL);
-  Wire.begin(16,17);
-  Serial.println("Adafruit VL6180x test!");
-  if (! vl.begin()) {
-    Serial.println("Failed to find sensor");
-    while (1);
-  }
-  Serial.println("Sensor found!");
+  Serial.println("Proceeding");
+  // Set Pin mode for IR Sensor
 
   // Hostname defaults to esp8266-[ChipID]
   ArduinoOTA.setHostname(CLIENT_ID);
@@ -139,7 +119,7 @@ void setup() {
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-//  led_startup();
+  sensor_init();
 }
 
 void reconnect() {
@@ -164,109 +144,72 @@ void reconnect() {
   }
 }
 
-//void is_it_me() {
-//  unsigned long timeNow = millis();
-//  if (timeNow >= huggedTime && hugStuck == false) {
-//    //Serial.println("tick start");
-//    int ir = digitalRead(IR_PIN);
-//
-//    // (Potential)? Hug cleared
-//    if (hugTicks == 0 && hugs == true)
-//    {
-//      hugs = false;
-//      Serial.println("(Potential)? Hug cleared");
-//    }
-//   
-// //   if (hugTicks == 0)
-// //   {
-// //     int i;
-// //     for(i = 0; i < NUM_LEDS; i++)
-// //     {
-// //       leds[i] = CRGB::Black;
-// //       FastLED.show();
-// //     }
-// //   }
-//
-//    // I've been hugged!
-//    if (hugTicks == 7 && hugs == false)
-//    {
-//      hugs = true;
-//      Serial.println("I've been hugged <3");
-//      client.publish("/hugged", "true");
-//    }
-//
-//    // Oh noes I'm potentially stuck in a hug!
-//    // (more likely my badge is obstructed... or my hacky code)
-// //   if (hugTicks == 50)
-// //   {
-// //     int i;
-// //     CHSV hsv( 0, 255, 200);
-// //     for(i = 0; i < NUM_LEDS; i++) {
-// //       leds[i] = hsv;
-// //     	FastLED.show();
-// //     }
-//
-// //     hugStuck = true;
-// //     Serial.println("Ack! I'm stuck!");
-// //     client.publish("/stuck", "true");
-// //     return;
-// //   }
-//
-// //   if( ir == 0 )
-// //   {
-// //     Serial.println("Hug tick increase");
-// //     hugTicks += 1;
-//
-// //     int brightness;
-// //     if (hugTicks < 15)
-// //     {
-// //       brightness = hugTicks * 9;
-// //     }
-// //     else
-// //     {
-// //       brightness = 150;
-// //     }
-// //    
-// //     // @projectgus debugged my code. Iterating past the end of the list
-// //     // will corrupt memory.
-// //     int i;
-// //     CHSV hsv( 160, 255, brightness);
-// //     for(i = 0; i < NUM_LEDS; i++)
-// //     {
-// //       leds[i] = hsv;
-// //       FastLED.show();
-// //     }
-// //   }
-// //   if( ir == 1 && hugTicks > 0)
-// //   {
-// //     Serial.println("Hug tick decrease");
-// //     hugTicks -= 1;
-// //    
-// //     // All the conference hackiness :D
-// //     if (hugs = false) {
-// //       int brightness;
-// //       if (hugTicks < 15)
-// //       {
-// //         brightness = hugTicks * 9;
-// //       }
-// //       else
-// //       {
-// //         brightness = 150;
-// //       }
-// //       
-// //       int i;
-// //       CHSV hsv( 160, 255, brightness);
-// //       for(i = 0; i < NUM_LEDS; i++)
-// //       {
-// //         leds[i] = hsv;
-// //         FastLED.show();
-// //       }
-// //     }
-// //   }
-//    //Serial.println("tick end");
-//    huggedTime = timeNow + 100;
-//  }
-//}
+void is_it_me() {
+  unsigned long timeNow = millis();
+  if (timeNow >= huggedTime && hugStuck == false) {
+    //Serial.println("tick start");
+    int range = sensor.readRangeContinuousMillimeters();
+    lastRange = range;
+
+    if (sensor.timeoutOccurred()) 
+    { 
+      Serial.print(" TIMEOUT");
+      huggedTime = timeNow + 50;
+      return;
+    }
+
+    // (Potential)? Hug cleared
+    if (hugTicks == 0 && hugs == true)
+    {
+      hugs = false;
+      hugsPotential = 0;
+      Serial.println("(Potential)? Hug cleared");
+    }
+   
+    // I've been hugged!
+    if (hugTicks == 10 && hugs == false)
+    {
+      hugs = true;
+      Serial.println("I've been hugged <3");
+      client.publish("/hugged", "true");
+    }
+
+    // Oh noes I'm potentially stuck in a hug!
+    // (more likely my badge is obstructed... or my hacky code)
+    if (hugTicks == 200)
+    {
+      hugStuck = true;
+      Serial.println("Ack! I'm stuck!");
+      client.publish("/stuck", "true");
+      return;
+    }
+
+    if (range < 200 && lastRange + 10 >= range && hugsPotential < 6) {
+      hugsPotential +=1;
+      Serial.println("Pontential Hug tick increase");
+    }
+    
+    if( range > 200 && hugsPotential > 0)
+    {
+      Serial.println("Pontential Hug tick decrease");
+      hugsPotential -= 1;
+    }
+
+    if( range < 100 && hugsPotential > 5)
+    {
+      Serial.println("Hug tick increase");
+      hugTicks += 1;
+
+    }
+    if( range > 150 && hugTicks > 0)
+    {
+      Serial.println("Hug tick decrease");
+      hugTicks -= 1;
+    }
+    //Serial.println("tick end");
+    huggedTime = timeNow + 50;
+  }
+}
 
 
 /**
@@ -292,8 +235,11 @@ void loop() {
     }
   }
 
- // is_it_me();
+  is_it_me();
 
   if (client.connected())
     client.loop();
+
+  // Call delay periodically to avoid triggering the watchdog
+  delay(10);
 }
