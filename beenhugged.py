@@ -40,7 +40,7 @@ def on_message(client, userdata, msg):
         time += datetime.timedelta(hours=3) #timezone haxxx
         print("A hug occurred!!")
         Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector")
-        api.PostUpdate("Nawww I've been #hugged at #lca2018 (Hug Detector @ [{}:{}:{}])".format(time.hour,time.minute,time.second))
+        api.PostUpdate("Nawww I've been #hugged at #lca2018 (Hug Detector @ [{:02}:{:02}:{:02}])".format(time.hour,time.minute,time.second))
 
     if (msg.topic.endswith("stuck")):
         print("I might be stuck")
