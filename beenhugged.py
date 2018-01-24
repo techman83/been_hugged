@@ -25,7 +25,7 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
     client.username_pw_set(conf.get('mqtt', 'user'), conf.get('mqtt', 'pass'))
-    client.connect(conf.get('mqtt', 'host'), conf.get('mqtt', 'port'), 60)
+    client.connect(conf.get('mqtt', 'host'), int(conf.get('mqtt', 'port')), 60)
     client.loop_forever()
 
 def on_connect(client, userdata, flags, rc):
