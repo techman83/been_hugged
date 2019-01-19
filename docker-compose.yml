@@ -1,0 +1,39 @@
+version: '2.1'
+
+volumes:
+  mqtt_persist:
+
+services:
+  beenhugged:
+    build:
+      context: beenhugged
+    working_dir: /code
+    command: python3 ./beenhugged.py
+    volumes:
+      - ./beenhugged:/code
+    environment:
+      TEST_MODE: 1
+      pushover_token: ${pushover_token}
+      pushover_key: ${pushover_key}
+      twitter_ckey: ${twitter_ckey}
+      twitter_csecret: ${twitter_csecret}
+      twitter_akey: ${twitter_akey}
+      twitter_asecret: ${twitter_asecret}
+      mqtt_user: ${mqtt_user}
+      mqtt_pass: ${mqtt_pass}
+      MQTT_PORT: 1883
+  mosquitto:
+    build:
+      context: mosquitto
+    command: /run-dev.sh 
+    ports:
+      - "8883:8883"
+    environment:
+      mqtt_user: ${mqtt_user}
+      mqtt_pass: ${mqtt_pass}
+    volumes:
+      - ./mosquitto/mosquitto.conf:/etc/mosquitto/mosquitto.conf
+      - mqtt_persist:/var/lib/mosquitto
+      - ./mosquitto/run-dev.sh:/run-dev.sh
+      - /opt/certs/fullchain.pem:/var/lib/mosquitto/fullchain.pem
+      - /opt/certs/privkey.pem:/var/lib/mosquitto/privkey.pem
