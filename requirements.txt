@@ -1,7 +1,0 @@
-future==0.16.0
-oauthlib==2.0.1
-paho-mqtt==1.2
-python-pushover==0.3
-python-twitter==3.2
-requests==2.12.5
-requests-oauthlib==0.7.0
