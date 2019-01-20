@@ -108,7 +108,15 @@
                                     ],
                                     "Resource": [
                                         {
-                                            "Ref": "ECSRepository"
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    {
+                                                        "Ref": "ECSRepository"
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
                                         }
                                     ]
                                 },
