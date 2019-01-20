@@ -22,12 +22,15 @@ services:
       mqtt_user: ${mqtt_user}
       mqtt_pass: ${mqtt_pass}
       MQTT_PORT: 1883
+      TWITTER_HANDLE: ${twitter_handle}
+      TIMEZONE: Pacific/Auckland
   mosquitto:
     build:
       context: mosquitto
     command: /run-dev.sh 
     ports:
       - "8883:8883"
+      - "1883:1883"
     environment:
       mqtt_user: ${mqtt_user}
       mqtt_pass: ${mqtt_pass}
