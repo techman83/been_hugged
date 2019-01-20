@@ -47,7 +47,7 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
     client.username_pw_set(os.environ.get('mqtt_user'), os.environ.get('mqtt_pass'))
-    client.connect('mosquitto', int(os.environ.get('MQTT_PORT')), 60)
+    client.connect(os.environ.get('MQTT_HOST','mosquitto'), int(os.environ.get('MQTT_PORT', 1883)), 60)
     client.loop_forever()
 
 def on_connect(client, userdata, flags, rc):
