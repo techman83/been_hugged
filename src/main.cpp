@@ -1,16 +1,19 @@
 /*
- * Message format is "on/off" like:
- *
- *   high  (defined pin on)
- *   low   (defined pin off)
+ * 
+ * Techman83's Hug Detector
  *
  */
 
-#include <WiFi.h>
-#include <Arduino.h>
-#include <ArduinoOTA.h>
-#include <PubSubClient.h>
+#include <WiFiClientSecure.h>
+#include <MQTT.h>
 #include <VL6180X.h>
+
+const char ssid[] = WIFI_SSID;
+const char pass[] = WIFI_PASS;
+
+WiFiClientSecure net;
+MQTTClient client;
+VL6180X sensor;
 
 unsigned long huggedTime = 0;
 int hugTicks = 0;
@@ -20,39 +23,6 @@ int ledPin = 22;
 volatile bool hugStuck = false;
 volatile bool hugs = false;
 
-/* MQTT Settings */
-#define BUFFER_SIZE 100
-char message_buff[100];
-
-/* ***************************************************** */
-/**
- * MQTT callback to process messages
- */
-
-//print any message received for subscribed topic
-void callback(char* topic, byte* payload, unsigned int length) 
-{
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  int i = 0;
-  for (i=0;i < length; i++) {
-    message_buff[i] = payload[i];
-  }
-  message_buff[i] = '\0';
-
-  String state = String(message_buff);
-  state.toUpperCase();
-  Serial.println(state);
-}
-
-WiFiClient wificlient;
-PubSubClient client(wificlient);
-VL6180X sensor;
-
-/**
- * Setup
- */
 void sensor_init()
 {
   delay(2000);
@@ -78,77 +48,58 @@ void sensor_init()
   sensor.startInterleavedContinuous(100);
 }
 
-void setup() {
-  Serial.begin(115200);
-  Serial.println("Booting");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.println("WiFi begun");
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
+void connect() {
+  delay(2000);
+  Serial.print("checking wifi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(1000);
   }
 
-  Serial.println("Proceeding");
-  // Set Pin mode for IR Sensor
+  Serial.print(MQTT_USER);
+  Serial.print("\nconnecting...");
+  while (!client.connect(CLIENT_ID,MQTT_USER,MQTT_PASS)) {
+    Serial.print(".");
+    delay(1000);
+    Serial.print(client.lastError());
+    Serial.print(client.returnCode());
+  }
 
-  // Hostname defaults to esp8266-[ChipID]
-  ArduinoOTA.setHostname(CLIENT_ID);
-  ArduinoOTA.setPassword(OTA_PASS);
+  String conMessage = String(CLIENT_ID) + " connected";
+  client.publish("/test", conMessage.c_str() );
+  Serial.println("MQTT connected");
+}
 
-  client.setServer(MQTT, 12839);
-  client.setCallback(callback);
 
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if      (error == OTA_AUTH_ERROR   ) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR  ) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR    ) Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+void wifi_connect() {
+  Serial.print("Connecting to ");
+  Serial.print(WIFI_SSID);
+  Serial.println("...");
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    return;
+  }
+  Serial.println("WiFi connected");
+}
+
+
+void messageReceived(String &topic, String &payload) {
+  Serial.println("incoming: " + topic + " - " + payload);
+}
+
+
+void setup() {
+  Serial.begin(115200);
+  client.begin(MQTT, 8883, net);
+  client.onMessage(messageReceived);
+
+  wifi_connect();
+  connect();
   sensor_init();
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-  delay(500);
-  digitalWrite(ledPin, HIGH);
-  delay(500);
   Serial.println("Ready");
 }
 
-void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    if (client.connect(CLIENT_ID,MQTT_USER,MQTT_PASS)) {
-      Serial.println("connected");
-
-      // Once connected, publish an announcement...
-      String conMessage = String(CLIENT_ID) + " connected";
-      client.publish("/test", conMessage.c_str() );
-
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
-}
 
 void is_it_me() {
   if (hugStuck)
@@ -224,34 +175,14 @@ void is_it_me() {
 }
 
 
-/**
- * Main
- */
 void loop() {
-  ArduinoOTA.handle();
+  client.loop();
+  delay(10);  // <- fixes some issues with WiFi stability
+
   if (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print("Connecting to ");
-    Serial.print(WIFI_SSID);
-    Serial.println("...");
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-
-    if (WiFi.waitForConnectResult() != WL_CONNECTED)
-      return;
-    Serial.println("WiFi connected");
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    if (!client.connected()) {
-      reconnect();
-    }
-  }
+    wifi_connect();
+  if (!client.connected())
+    connect();
 
   is_it_me();
-
-  if (client.connected())
-    client.loop();
-
-  // Call delay periodically to avoid triggering the watchdog
-  delay(10);
 }
