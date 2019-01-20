@@ -19,6 +19,27 @@ api = twitter.Api(
 init(os.environ.get('pushover_token'))
 userkey = os.environ.get('pushover_key')
 
+HUG_MESSAGES = {
+    "7": "Hug Achieved!",
+    "8": "Quality Hug!",
+    "9": "Hug Achiever!",
+    "10": "Supreme Hug Level!",
+    "11": "Super Hugger!",
+    "12": "A Hug Most Excellent!",
+    "13": "Oh my hug!",
+    "14": "Exceptional Hugger!",
+    "15": "FULL HEART UNLOCKED!",
+    "16": "FULL HEART++",
+    "17": "FULL HEART+++",
+    "18": "The <3 level is so darn high!",
+    "19": "It's the hug that never ends <3",
+    "20": "It goes on and on my friend <3",
+    "21": "A hug for the ages <3",
+    "22": "The most wonderful hug has occurred <3",
+    "23": "This hug is almost off the scale <3",
+    "24": "This hug is literally off the scale!! <3 <3 <3",
+}
+
 def main():
     if TEST_MODE:
         print("Running with Test Mode enabled")
@@ -38,14 +59,14 @@ def on_message(client, userdata, msg):
     payload_string = str(msg.payload,'utf-8')
 
     if (msg.topic.endswith("hugged")):
-        time = datetime.datetime.now()
-        time += datetime.timedelta(hours=3) #timezone haxxx
+        tz = pytz.timezone(os.environ.get('TIMEZONE', 'Australia/Perth'))
+        time = datetime.datetime.now(tz)
         print("A hug occurred!!")
-        Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector")
-
-        msg = "Nawww I've been #hugged at #lca2018 (Hug Detector @ [{:02}:{:02}:{:02}])".format(time.hour,time.minute,time.second)
+        Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector", sound='magic')
+        hug_message = HUG_MESSAGES.get(payload_string, "Oh my, I've been hugged of unknown quality!")
+        msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
         if TEST_MODE:
-            api.PostDirectMessage(msg, user_id=None, screen_name=TWITTER_HANDLE)
+            print(msg)
         else:
             api.PostUpdate(msg)
 
