@@ -6,7 +6,6 @@ services:
     links:
       - mosquitto
     environment:
-      TEST_MODE: 0
       TIMEZONE: Pacific/Auckland
   mosquitto:
     image: ${ecs_repo}/mosquitto
