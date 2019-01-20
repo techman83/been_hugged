@@ -1,0 +1,19 @@
+version: '2'
+services:
+  hugged:
+    image: ${ecs_repo}/beenhugged
+    mem_limit: 256m
+    links:
+      - mosquitto
+    environment:
+      TEST_MODE: 1
+      TIMEZONE: Pacific/Auckland
+  mosquitto:
+    image: ${ecs_repo}/mosquitto
+    mem_limit: 128m
+    ports:
+      - "8883:8883"
+      - "1883:1883"
+    volumes:
+      - /opt/certs/fullchain.pem:/var/lib/mosquitto/fullchain.pem
+      - /opt/certs/privkey.pem:/var/lib/mosquitto/privkey.pem

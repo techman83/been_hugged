@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$1" = "restart" ]
+then
+    ecs-cli compose -f docker-compose.ecs.yml service stop && ecs-cli compose -f docker-compose.ecs.yml service start
+else
+    ecs-cli compose -f docker-compose.ecs.yml service $@
+fi
