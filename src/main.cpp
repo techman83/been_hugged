@@ -174,14 +174,14 @@ void is_it_me() {
       hugQuality += 1;
       heart.increase();
       Serial.println("Hug Quality increase");
-      huggedTime = timeNow + 50;
+      huggedTime = timeNow + 25;
       return;
     }
 
     if (hugs == true) {
       hugExpiry += 1;
       Serial.println("Expiry Timeout Increasing");
-      huggedTime = timeNow + 50;
+      huggedTime = timeNow + 25;
       return;
     }
 
@@ -226,14 +226,14 @@ void is_it_me() {
       hugTicks -= 1;
     }
     //Serial.println("tick end");
-    huggedTime = timeNow + 50;
+    huggedTime = timeNow + 25;
   }
 }
 
 
 void loop() {
   client.loop();
-  delay(10);  // <- fixes some issues with WiFi stability
+  delay(50);  // <- fixes some issues with WiFi stability
 
   if (WiFi.status() != WL_CONNECTED)
     wifi_connect();
