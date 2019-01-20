@@ -21,7 +21,6 @@ services:
       twitter_asecret: ${twitter_asecret}
       mqtt_user: ${mqtt_user}
       mqtt_pass: ${mqtt_pass}
-      MQTT_PORT: 1883
       TWITTER_HANDLE: ${twitter_handle}
       TIMEZONE: Pacific/Auckland
   mosquitto:
@@ -36,7 +35,7 @@ services:
       mqtt_pass: ${mqtt_pass}
     volumes:
       - ./mosquitto/mosquitto.conf:/etc/mosquitto/mosquitto.conf
-      - mqtt_persist:/var/lib/mosquitto
+      - mqtt_persist:/opt/persist
       - ./mosquitto/run-dev.sh:/run-dev.sh
       - /opt/certs/fullchain.pem:/var/lib/mosquitto/fullchain.pem
       - /opt/certs/privkey.pem:/var/lib/mosquitto/privkey.pem
