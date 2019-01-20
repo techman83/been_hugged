@@ -399,6 +399,8 @@
                                     "Ref": "FQDN"
                                 },
                                 "/*.pem certs/.)\n",
+                                "# Should do something better than this\n",
+                                "chmod 0644 /opt/certs/privkey.pem\n",
                                 "# Start up the cfn-hup daemon to listen for changes to the metadata\n",
                                 "/opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'\n",
                                 "# Signal the status from cfn-init\n",
