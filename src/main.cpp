@@ -129,7 +129,11 @@ void is_it_me() {
       hugExpiry = 0;
       client.publish("/hugged", String(hugQuality));
       Serial.println("Hug cleared");
-      huggedTime = timeNow + 10000;
+      delay(10000);
+      heart.reset();
+      // This is an awful hack, until I figure out why `hugs` reverts to true
+      // on the next loop.
+      ESP.restart();
       return;
     }
 
