@@ -18,6 +18,8 @@ VL6180X sensor;
 unsigned long huggedTime = 0;
 int hugTicks = 0;
 int hugsPotential = 0;
+int hugQuality = 0;
+int hugExpiry = 0;
 int lastRange = 0;
 int ledPin = 22;
 volatile bool hugStuck = false;
@@ -117,23 +119,40 @@ void is_it_me() {
       return;
     }
 
-    // (Potential)? Hug cleared
-    if (hugTicks == 0 && hugs == true)
-    {
+    // Publish and Clear Hug
+    if (hugs == true && hugExpiry >= 10) {
+      Serial.print("Hug Quality (");
+      Serial.print(hugQuality);
+      Serial.println(") Measured and Published");
       hugs = false;
       hugsPotential = 0;
-      digitalWrite(ledPin, HIGH);
-      Serial.println("(Potential)? Hug cleared");
+      hugExpiry = 0;
+      client.publish("/hugged", String(hugQuality));
+      Serial.println("Hug cleared");
+      huggedTime = timeNow + 10000;
+      return;
     }
-   
+
+    // Measuring quality
+    if (hugs == true && range < 100) {
+      hugQuality += 1;
+      Serial.println("Hug Quality increase");
+      huggedTime = timeNow + 50;
+      return;
+    }
+
+    if (hugs == true) {
+      hugExpiry += 1;
+      Serial.println("Expiry Timeout Increasing");
+      huggedTime = timeNow + 50;
+      return;
+    }
+
     // I've been hugged!
-    if (hugTicks == 7 && hugs == false)
+    if (hugTicks >= 7 && hugs == false)
     {
       hugs = true;
       Serial.println("I've been hugged <3");
-      client.publish("/hugged", "true");
-      digitalWrite(ledPin, LOW);
-      huggedTime = timeNow + 10000;
       return;
     }
 

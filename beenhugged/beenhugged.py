@@ -20,24 +20,24 @@ init(os.environ.get('pushover_token'))
 userkey = os.environ.get('pushover_key')
 
 HUG_MESSAGES = {
-    "7": "Hug Achieved!",
-    "8": "Quality Hug!",
-    "9": "Hug Achiever!",
-    "10": "Supreme Hug Level!",
-    "11": "Super Hugger!",
-    "12": "A Hug Most Excellent!",
-    "13": "Oh my hug!",
-    "14": "Exceptional Hugger!",
-    "15": "FULL HEART UNLOCKED!",
-    "16": "FULL HEART++",
-    "17": "FULL HEART+++",
-    "18": "The <3 level is so darn high!",
-    "19": "It's the hug that never ends <3",
-    "20": "It goes on and on my friend <3",
-    "21": "A hug for the ages <3",
-    "22": "The most wonderful hug has occurred <3",
-    "23": "This hug is almost off the scale <3",
-    "24": "This hug is literally off the scale!! <3 <3 <3",
+    "1": "Hug Achieved!",
+    "2": "Quality Hug!",
+    "3": "Hug Achiever!",
+    "4": "Supreme Hug Level!",
+    "5": "Super Hugger!",
+    "6": "A Hug Most Excellent!",
+    "7": "Oh my hug!",
+    "8": "Exceptional Hugger!",
+    "9": "FULL HEART UNLOCKED!",
+    "10": "FULL HEART++",
+    "11": "FULL HEART+++",
+    "12": "The <3 level is so darn high!",
+    "13": "It's the hug that never ends <3",
+    "14": "It goes on and on my friend <3",
+    "15": "A hug for the ages <3",
+    "16": "The most wonderful hug has occurred <3",
+    "17": "This hug is almost off the scale <3",
+    "18": "This hug is literally off the scale!! <3 <3 <3",
 }
 
 def main():
@@ -63,6 +63,8 @@ def on_message(client, userdata, msg):
         time = datetime.datetime.now(tz)
         print("A hug occurred!!")
         Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector", sound='magic')
+        if int(payload_string) >= 18:
+            payload_string = "18"
         hug_message = HUG_MESSAGES.get(payload_string, "Oh my, I've been hugged of unknown quality!")
         msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
         if TEST_MODE:
