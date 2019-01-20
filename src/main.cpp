@@ -7,6 +7,9 @@
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
 #include <VL6180X.h>
+#include <Adafruit_DotStarMatrix.h>
+#include <DotMatrix_GrowingHeart.h>
+#include <SPI.h>
 
 const char ssid[] = WIFI_SSID;
 const char pass[] = WIFI_PASS;
@@ -22,8 +25,17 @@ int hugQuality = 0;
 int hugExpiry = 0;
 int lastRange = 0;
 int ledPin = 22;
-volatile bool hugStuck = false;
+volatile bool hugStuck;
 volatile bool hugs = false;
+
+Adafruit_DotStarMatrix matrix = Adafruit_DotStarMatrix(
+  8, 8,  // Width, height
+  23, 18, // Data pin, clock pin
+  DS_MATRIX_BOTTOM  + DS_MATRIX_LEFT +
+  DS_MATRIX_ROWS + DS_MATRIX_PROGRESSIVE,
+  DOTSTAR_BRG);
+
+DotMatrix_GrowingHeart heart;
 
 void sensor_init()
 {
@@ -60,15 +72,24 @@ void connect() {
 
   Serial.print(MQTT_USER);
   Serial.print("\nconnecting...");
+  int failure = 0;
+  digitalWrite(ledPin, LOW);
   while (!client.connect(CLIENT_ID,MQTT_USER,MQTT_PASS)) {
+    digitalWrite(ledPin, LOW);
     Serial.print(".");
     delay(1000);
+    digitalWrite(ledPin, HIGH);
     Serial.print(client.lastError());
     Serial.print(client.returnCode());
+    failure += 1;
+    if (failure >= 10) {
+      ESP.restart();
+    }
   }
 
   String conMessage = String(CLIENT_ID) + " connected";
   client.publish("/test", conMessage.c_str() );
+  digitalWrite(ledPin, HIGH);
   Serial.println("MQTT connected");
 }
 
@@ -77,7 +98,9 @@ void wifi_connect() {
   Serial.print("Connecting to ");
   Serial.print(WIFI_SSID);
   Serial.println("...");
+  digitalWrite(ledPin, LOW);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
+  digitalWrite(ledPin, HIGH);
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     return;
@@ -93,12 +116,21 @@ void messageReceived(String &topic, String &payload) {
 
 void setup() {
   Serial.begin(115200);
+  heart.setMatrix(&matrix)
+    .matrixBegin();
   client.begin(MQTT, 8883, net);
   client.onMessage(messageReceived);
 
   wifi_connect();
   connect();
   sensor_init();
+
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+  delay(500);
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+
   Serial.println("Ready");
 }
 
@@ -140,6 +172,7 @@ void is_it_me() {
     // Measuring quality
     if (hugs == true && range < 100) {
       hugQuality += 1;
+      heart.increase();
       Serial.println("Hug Quality increase");
       huggedTime = timeNow + 50;
       return;
