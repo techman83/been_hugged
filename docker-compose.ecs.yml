@@ -12,6 +12,8 @@ services:
     mem_limit: 128m
     links:
       - mosquitto
+    environment:
+      INTERVAL: 3
   mosquitto:
     image: ${ecs_repo}/mosquitto
     mem_limit: 128m

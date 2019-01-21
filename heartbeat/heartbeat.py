@@ -3,6 +3,8 @@ import os
 import paho.mqtt.client as mqtt
 from time import sleep
 
+INTERVAL = int(os.environ.get('INTERVAL',5))
+
 def main():
     client = mqtt.Client()
     client.on_connect = on_connect
@@ -11,7 +13,7 @@ def main():
 
     while True:
         client.publish('/heartbeat', 'ping')
-        sleep(5)
+        sleep(INTERVAL)
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
