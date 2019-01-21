@@ -6,6 +6,7 @@ services:
     links:
       - mosquitto
     environment:
+      QUALITY_MODIFIER: 10
       TIMEZONE: Pacific/Auckland
   heartbeat:
     image: ${ecs_repo}/heartbeat
@@ -13,7 +14,7 @@ services:
     links:
       - mosquitto
     environment:
-      INTERVAL: 3
+      INTERVAL: 2
   mosquitto:
     image: ${ecs_repo}/mosquitto
     mem_limit: 128m

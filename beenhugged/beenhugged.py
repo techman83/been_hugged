@@ -6,6 +6,7 @@ from pushover import init, Client
 
 TEST_MODE = os.environ.get("TEST_MODE", 0)
 TWITTER_HANDLE = os.environ.get("TWITTER_HANDLE")
+QUALITY_MODIFIER = int(os.environ.get("QUALITY_MODIFIER",0))
 
 # Twitter Credentials
 api = twitter.Api(
@@ -20,24 +21,24 @@ init(os.environ.get('pushover_token'))
 userkey = os.environ.get('pushover_key')
 
 HUG_MESSAGES = {
-    "1": "Hug Achieved!",
-    "2": "Quality Hug!",
-    "3": "Hug Achiever!",
-    "4": "Supreme Hug Level!",
-    "5": "Super Hugger!",
-    "6": "A Hug Most Excellent!",
-    "7": "Oh my hug!",
-    "8": "Exceptional Hugger!",
-    "9": "FULL HEART UNLOCKED!",
-    "10": "FULL HEART++",
-    "11": "FULL HEART+++",
-    "12": "The <3 level is so darn high!",
-    "13": "It's the hug that never ends <3",
-    "14": "It goes on and on my friend <3",
-    "15": "A hug for the ages <3",
-    "16": "The most wonderful hug has occurred <3",
-    "17": "This hug is almost off the scale <3",
-    "18": "This hug is literally off the scale!! <3 <3 <3",
+    1: "Hug Achieved!",
+    2: "Quality Hug!",
+    3: "Hug Achiever!",
+    4: "Supreme Hug Level!",
+    5: "Super Hugger!",
+    6: "A Hug Most Excellent!",
+    7: "Oh my hug!",
+    8: "Exceptional Hugger!",
+    9: "FULL HEART UNLOCKED!",
+    10: "FULL HEART++",
+    11: "FULL HEART+++",
+    12: "The <3 level is so darn high!",
+    13: "It's the hug that never ends <3",
+    14: "It goes on and on my friend <3",
+    15: "A hug for the ages <3",
+    16: "The most wonderful hug has occurred <3",
+    17: "This hug is almost off the scale <3",
+    18: "This hug is literally off the scale!! <3 <3 <3",
 }
 
 def main():
@@ -61,15 +62,16 @@ def on_message(client, userdata, msg):
     if (msg.topic.endswith("hugged")):
         tz = pytz.timezone(os.environ.get('TIMEZONE', 'Australia/Perth'))
         time = datetime.datetime.now(tz)
-        print("A hug occurred!!")
         Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector", sound='magic')
-        if int(payload_string) >= 18:
-            payload_string = "18"
-        hug_message = HUG_MESSAGES.get(payload_string, "Oh my, I've been hugged of unknown quality!")
-        msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
-        if TEST_MODE:
-            print(msg)
-        else:
+
+        # Should really do something less ugly here..
+        hug_quality = int(payload_string) - QUALITY_MODIFIER
+        if hug_quality >= 18:
+            hug_quality = "18"
+        hug_message = HUG_MESSAGES.get(hug_quality, "Oh my, I've been hugged of an unmeasurable quality!")
+        msg = 'Quality Received: {} - Quality_Adjusted: {} - Message sent: "Nawww I\'ve been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])"'.format(payload_string,hug_quality, hug_message,time.hour,time.minute,time.second)
+        print(msg)
+        if not TEST_MODE:
             api.PostUpdate(msg)
 
     if (msg.topic.endswith("stuck")):
