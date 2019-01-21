@@ -19,11 +19,11 @@ MQTTClient client;
 VL6180X sensor;
 
 unsigned long huggedTime = 0;
-int hugTicks = 0;
-int hugsPotential = 0;
-int hugQuality = 0;
-int hugExpiry = 0;
-int lastRange = 0;
+uint16_t hugTicks = 0;
+uint16_t hugsPotential = 0;
+uint16_t hugQuality = 0;
+uint16_t hugExpiry = 0;
+uint16_t lastRange = 0;
 int ledPin = 22;
 volatile bool hugStuck;
 volatile bool hugs = false;
@@ -35,11 +35,16 @@ Adafruit_DotStarMatrix matrix = Adafruit_DotStarMatrix(
   DS_MATRIX_ROWS + DS_MATRIX_PROGRESSIVE,
   DOTSTAR_BRG);
 
+// Feedback loop
+uint16_t PIXELS = matrix.numPixels();
+uint16_t CUR_INDEX = 0;
+uint32_t COLOUR = matrix.Color(255, 0, 0); //RED
+uint32_t OFF = matrix.Color(0, 0, 0); //BLACK
+
 DotMatrix_GrowingHeart heart;
 
 void sensor_init()
 {
-  delay(2000);
   sensor.init();
   sensor.configureDefault();
   Serial.println( "Sensor Config..." );
@@ -63,7 +68,6 @@ void sensor_init()
 }
 
 void connect() {
-  delay(2000);
   Serial.print("checking wifi...");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
@@ -89,6 +93,7 @@ void connect() {
 
   String conMessage = String(CLIENT_ID) + " connected";
   client.publish("/test", conMessage.c_str() );
+  client.subscribe("/heartbeat");
   digitalWrite(ledPin, HIGH);
   Serial.println("MQTT connected");
 }
@@ -109,13 +114,30 @@ void wifi_connect() {
 }
 
 
+bool pixelMove() {
+  matrix.setPixelColor(CUR_INDEX, OFF);
+  if (++CUR_INDEX >= PIXELS) {
+    CUR_INDEX = 0;
+    matrix.show();
+    return false;
+  }
+  matrix.setPixelColor(CUR_INDEX, COLOUR);
+  matrix.show();
+  return true;
+}
+
+
 void messageReceived(String &topic, String &payload) {
   Serial.println("incoming: " + topic + " - " + payload);
+  if ( ! hugs  && payload == "ping" ) {
+    pixelMove();
+  }
 }
 
 
 void setup() {
   Serial.begin(115200);
+  delay(2000); // wait for device to settle
   heart.setMatrix(&matrix)
     .matrixBegin();
   client.begin(MQTT, 8883, net);
@@ -125,11 +147,10 @@ void setup() {
   connect();
   sensor_init();
 
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-  delay(500);
-  digitalWrite(ledPin, HIGH);
-  delay(500);
+  while (pixelMove()) {
+    delay(25);
+  }
+  heart.reset();
 
   Serial.println("Ready");
 }
@@ -189,6 +210,7 @@ void is_it_me() {
     if (hugTicks >= 7 && hugs == false)
     {
       hugs = true;
+      heart.reset();
       Serial.println("I've been hugged <3");
       return;
     }
