@@ -10,6 +10,7 @@
 #include <Adafruit_DotStarMatrix.h>
 #include <DotMatrix_GrowingHeart.h>
 #include <SPI.h>
+#include <Hugged.h>
 
 const char ssid[] = WIFI_SSID;
 const char pass[] = WIFI_PASS;
@@ -18,15 +19,7 @@ WiFiClientSecure net;
 MQTTClient client;
 VL6180X sensor;
 
-unsigned long huggedTime = 0;
-uint16_t hugTicks = 0;
-uint16_t hugsPotential = 0;
-uint16_t hugQuality = 0;
-uint16_t hugExpiry = 0;
-uint16_t lastRange = 0;
 int ledPin = 22;
-volatile bool hugStuck;
-volatile bool hugs = false;
 
 Adafruit_DotStarMatrix matrix = Adafruit_DotStarMatrix(
   8, 8,  // Width, height
@@ -42,6 +35,7 @@ uint32_t COLOUR = matrix.Color(255, 0, 0); //RED
 uint32_t OFF = matrix.Color(0, 0, 0); //BLACK
 
 DotMatrix_GrowingHeart heart;
+Hugged hugged;
 
 void sensor_init()
 {
@@ -129,7 +123,7 @@ bool pixelMove() {
 
 void messageReceived(String &topic, String &payload) {
   Serial.println("incoming: " + topic + " - " + payload);
-  if ( ! hugs  && payload == "ping" ) {
+  if ( ! hugged.hugged() && payload == "ping" ) {
     pixelMove();
   }
 }
@@ -137,7 +131,6 @@ void messageReceived(String &topic, String &payload) {
 
 void setup() {
   Serial.begin(115200);
-  delay(2000); // wait for device to settle
   heart.setMatrix(&matrix)
     .matrixBegin();
   client.begin(MQTT, 8883, net);
@@ -152,104 +145,11 @@ void setup() {
   }
   heart.reset();
 
+  hugged.setHugged(&client)
+    .setSensor(&sensor)
+    .setHeart(&heart);
+
   Serial.println("Ready");
-}
-
-
-void is_it_me() {
-  if (hugStuck)
-    return;
-
-  unsigned long timeNow = millis();
-  if (timeNow >= huggedTime) {
-    int range = sensor.readRangeContinuousMillimeters();
-    lastRange = range;
-
-    if (sensor.timeoutOccurred()) 
-    { 
-      Serial.print(" TIMEOUT");
-      huggedTime = timeNow + 50;
-      return;
-    }
-
-    // Publish and Clear Hug
-    if (hugs == true && hugExpiry >= 10) {
-      Serial.print("Hug Quality (");
-      Serial.print(hugQuality);
-      Serial.println(") Measured and Published");
-      hugs = false;
-      hugsPotential = 0;
-      hugExpiry = 0;
-      client.publish("/hugged", String(hugQuality));
-      Serial.println("Hug cleared");
-      delay(10000);
-      heart.reset();
-      // This is an awful hack, until I figure out why `hugs` reverts to true
-      // on the next loop.
-      ESP.restart();
-      return;
-    }
-
-    // Measuring quality
-    if (hugs == true && range < 100) {
-      hugQuality += 1;
-      heart.increase();
-      Serial.println("Hug Quality increase");
-      huggedTime = timeNow + 25;
-      return;
-    }
-
-    if (hugs == true) {
-      hugExpiry += 1;
-      Serial.println("Expiry Timeout Increasing");
-      huggedTime = timeNow + 25;
-      return;
-    }
-
-    // I've been hugged!
-    if (hugTicks >= 7 && hugs == false)
-    {
-      hugs = true;
-      heart.reset();
-      Serial.println("I've been hugged <3");
-      return;
-    }
-
-    // Oh noes I'm potentially stuck in a hug!
-    // (more likely my badge is obstructed... or my hacky code)
-    if (hugTicks == 200)
-    {
-      hugStuck = true;
-      Serial.println("Ack! I'm stuck!");
-      client.publish("/stuck", "true");
-      return;
-    }
-
-    if (range < 200 && lastRange + 10 >= range && hugsPotential < 6) {
-      hugsPotential +=1;
-      Serial.println("Pontential Hug tick increase");
-    }
-    
-    if( range > 200 && hugsPotential > 0)
-    {
-      Serial.println("Pontential Hug tick decrease");
-      hugsPotential -= 1;
-    }
-
-    if( range < 100 && hugsPotential > 5)
-    {
-      Serial.println("Hug tick increase");
-      hugTicks += 1;
-
-    }
-    if( range > 150 && hugTicks > 0)
-    {
-      Serial.println("Hug tick decrease");
-      hugTicks -= 1;
-    }
-    //Serial.println("tick end");
-    huggedTime = timeNow + 25;
-  }
 }
 
 
@@ -262,5 +162,5 @@ void loop() {
   if (!client.connected())
     connect();
 
-  is_it_me();
+  hugged.hugLoop();
 }
