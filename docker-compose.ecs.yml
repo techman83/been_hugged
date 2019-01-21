@@ -2,11 +2,16 @@ version: '2'
 services:
   hugged:
     image: ${ecs_repo}/beenhugged
-    mem_limit: 256m
+    mem_limit: 128m
     links:
       - mosquitto
     environment:
       TIMEZONE: Pacific/Auckland
+  heartbeat:
+    image: ${ecs_repo}/heartbeat
+    mem_limit: 128m
+    links:
+      - mosquitto
   mosquitto:
     image: ${ecs_repo}/mosquitto
     mem_limit: 128m

@@ -23,6 +23,20 @@ services:
       mqtt_pass: ${mqtt_pass}
       TWITTER_HANDLE: ${twitter_handle}
       TIMEZONE: Pacific/Auckland
+    links:
+      - "mosquitto"
+  heartbeat:
+    build:
+      context: heartbeat
+    working_dir: /code
+    command: python3 ./heartbeat.py
+    volumes:
+      - ./heartbeat:/code
+    environment:
+      mqtt_user: ${mqtt_user}
+      mqtt_pass: ${mqtt_pass}
+    links:
+      - "mosquitto"
   mosquitto:
     build:
       context: mosquitto

@@ -6,6 +6,11 @@
 docker tag been_hugged/beenhugged:latest ${ecs_repo}/beenhugged:latest
 docker push ${ecs_repo}/beenhugged:latest
 
+# Heartbeat
+(cd heartbeat && docker build --rm -t been_hugged/heartbeat -f Dockerfile .)
+docker tag been_hugged/heartbeat:latest ${ecs_repo}/heartbeat:latest
+docker push ${ecs_repo}/heartbeat:latest
+
 # Mosquitto
 (cd mosquitto && docker build --rm -t been_hugged/mosquitto -f Dockerfile .)
 docker tag been_hugged/mosquitto:latest ${ecs_repo}/mosquitto:latest
