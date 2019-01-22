@@ -31,7 +31,9 @@ Adafruit_DotStarMatrix matrix = Adafruit_DotStarMatrix(
 // Feedback loop
 uint16_t PIXELS = matrix.numPixels();
 uint16_t CUR_INDEX = 0;
-uint32_t COLOUR = matrix.Color(255, 0, 0); //RED
+uint32_t RED = matrix.Color(255, 0, 0);
+uint32_t BLUE = matrix.Color(0, 200, 0);
+uint32_t PINK = matrix.Color(200, 200, 0);
 uint32_t OFF = matrix.Color(0, 0, 0); //BLACK
 
 DotMatrix_GrowingHeart heart;
@@ -61,34 +63,41 @@ void sensor_init()
   sensor.startInterleavedContinuous(100);
 }
 
-void connect() {
-  Serial.print("checking wifi...");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(1000);
+bool pixelMove(uint32_t colour) {
+  matrix.setPixelColor(CUR_INDEX, OFF);
+  if (++CUR_INDEX >= PIXELS) {
+    CUR_INDEX = 0;
+    matrix.show();
+    return false;
   }
+  matrix.setPixelColor(CUR_INDEX, colour);
+  matrix.show();
+  return true;
+}
 
+
+void connect() {
   Serial.print(MQTT_USER);
   Serial.print("\nconnecting...");
   int failure = 0;
   digitalWrite(ledPin, LOW);
   while (!client.connect(CLIENT_ID,MQTT_USER,MQTT_PASS)) {
-    digitalWrite(ledPin, LOW);
+    pixelMove(PINK);
     Serial.print(".");
-    delay(1000);
-    digitalWrite(ledPin, HIGH);
+    delay(250);
     Serial.print(client.lastError());
     Serial.print(client.returnCode());
     failure += 1;
-    if (failure >= 10) {
+    if (failure >= 20) {
       ESP.restart();
     }
   }
 
+  matrix.setPixelColor(CUR_INDEX, OFF);
+  matrix.show();
   String conMessage = String(CLIENT_ID) + " connected";
   client.publish("/test", conMessage.c_str() );
   client.subscribe("/heartbeat");
-  digitalWrite(ledPin, HIGH);
   Serial.println("MQTT connected");
 }
 
@@ -97,34 +106,25 @@ void wifi_connect() {
   Serial.print("Connecting to ");
   Serial.print(WIFI_SSID);
   Serial.println("...");
-  digitalWrite(ledPin, LOW);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  digitalWrite(ledPin, HIGH);
 
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    return;
+  Serial.print("checking wifi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    pixelMove(BLUE);
+    Serial.print(".");
+    delay(1000);
   }
-  Serial.println("WiFi connected");
-}
 
-
-bool pixelMove() {
   matrix.setPixelColor(CUR_INDEX, OFF);
-  if (++CUR_INDEX >= PIXELS) {
-    CUR_INDEX = 0;
-    matrix.show();
-    return false;
-  }
-  matrix.setPixelColor(CUR_INDEX, COLOUR);
   matrix.show();
-  return true;
+  Serial.println("WiFi connected");
 }
 
 
 void messageReceived(String &topic, String &payload) {
   Serial.println("incoming: " + topic + " - " + payload);
   if ( ! hugged.hugged() && payload == "ping" ) {
-    pixelMove();
+    pixelMove(RED);
   }
 }
 
@@ -140,7 +140,7 @@ void setup() {
   connect();
   sensor_init();
 
-  while (pixelMove()) {
+  while (pixelMove(RED)) {
     delay(25);
   }
   heart.reset();
