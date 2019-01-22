@@ -20,26 +20,27 @@ api = twitter.Api(
 init(os.environ.get('pushover_token'))
 userkey = os.environ.get('pushover_key')
 
-HUG_MESSAGES = {
-    1: "Hug Achieved!",
-    2: "Quality Hug!",
-    3: "Hug Achiever!",
-    4: "Supreme Hug Level!",
-    5: "Super Hugger!",
-    6: "A Hug Most Excellent!",
-    7: "Oh my hug!",
-    8: "Exceptional Hugger!",
-    9: "FULL HEART UNLOCKED!",
-    10: "FULL HEART++",
-    11: "FULL HEART+++",
-    12: "The <3 level is so darn high!",
-    13: "It's the hug that never ends <3",
-    14: "It goes on and on my friend <3",
-    15: "A hug for the ages <3",
-    16: "The most wonderful hug has occurred <3",
-    17: "This hug is almost off the scale <3",
-    18: "This hug is literally off the scale!! <3 <3 <3",
-}
+HUG_MESSAGES = (
+    "Hug Achieved!",
+    "Quality Hug!",
+    "Hug Achiever!",
+    "Supreme Hug Level!",
+    "Super Hugger!",
+    "A Hug Most Excellent!",
+    "Oh my hug!",
+    "Exceptional Hugger!",
+    "FULL HEART UNLOCKED!",
+    "FULL HEART++",
+    "FULL HEART+++",
+    "The <3 level is so darn high!",
+    "It's the hug that never ends <3",
+    "It goes on and on my friend <3",
+    "A hug for the ages <3",
+    "The most wonderful hug has occurred <3",
+    "This hug is almost off the scale <3",
+    "This hug is literally off the scale!! <3 <3 <3",
+)
+MESSAGE_MAX_INDEX = len(HUG_MESSAGES) - 1
 
 def main():
     if TEST_MODE:
@@ -62,15 +63,17 @@ def on_message(client, userdata, msg):
     if (msg.topic.endswith("hugged")):
         tz = pytz.timezone(os.environ.get('TIMEZONE', 'Australia/Perth'))
         time = datetime.datetime.now(tz)
-        Client(userkey).send_message("I've been hugged!!!!", title="Hug Detector", sound='magic')
 
-        # Should really do something less ugly here..
         hug_quality = int(payload_string) - QUALITY_MODIFIER
-        if hug_quality >= 18:
-            hug_quality = "18"
-        hug_message = HUG_MESSAGES.get(hug_quality, "Oh my, I've been hugged of an unmeasurable quality!")
+        if hug_quality >= MESSAGE_MAX_INDEX:
+            hug_quality = MESSAGE_MAX_INDEX
+        hug_message = "Oh my, I've been hugged of an unmeasurable quality!"
+        if hug_quality >= 0:
+            hug_message = HUG_MESSAGES[hug_quality]
+
         msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
         print("Quality Received: {} - Quality_Adjusted: {} - Message sent: {}".format(payload_string ,hug_quality, msg))
+        Client(userkey).send_message(msg, title="Hug Detector", sound='magic')
         if not TEST_MODE:
             api.PostUpdate(msg)
 
