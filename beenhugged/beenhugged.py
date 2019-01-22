@@ -69,8 +69,8 @@ def on_message(client, userdata, msg):
         if hug_quality >= 18:
             hug_quality = "18"
         hug_message = HUG_MESSAGES.get(hug_quality, "Oh my, I've been hugged of an unmeasurable quality!")
-        msg = 'Quality Received: {} - Quality_Adjusted: {} - Message sent: "Nawww I\'ve been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])"'.format(payload_string,hug_quality, hug_message,time.hour,time.minute,time.second)
-        print(msg)
+        msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
+        print("Quality Received: {} - Quality_Adjusted: {} - Message sent: {}".format(payload_string ,hug_quality, msg))
         if not TEST_MODE:
             api.PostUpdate(msg)
 
