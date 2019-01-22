@@ -18,7 +18,7 @@ uint16_t hugQuality;
 uint16_t hugExpiry;
 uint16_t lastRange;
 volatile bool hugStuck;
-volatile bool hugs;
+volatile bool hugState;
 
 public:
   Hugged();

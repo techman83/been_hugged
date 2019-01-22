@@ -15,7 +15,7 @@ Hugged::Hugged() {
   this->hugQuality    = 0;
   this->lastRange     = 0;
   this->hugStuck      = false;
-  this->hugs          = false;
+  this->hugState      = false;
 }
 
 Hugged& Hugged::setHugged(MQTTClient* client) {
@@ -56,16 +56,16 @@ void Hugged::hugLoop() {
     }
 
     // Publish and Clear Hug
-    if (hugs == true && hugExpiry >= 10) {
+    if (hugState == true && hugExpiry >= 10) {
       Serial.print("Hug Quality (");
       Serial.print(hugQuality);
       Serial.println(") Measured and Published");
-      hugs = false;
+      hugState = false;
       hugsPotential = 0;
       hugExpiry = 0;
       client->publish("/hugged", String(hugQuality));
       Serial.println("Hug cleared");
-      delay(10000);
+      delay(7000);
       heart->reset();
       // This is an awful hack, until I figure out why `hugs` reverts to true
       // on the next loop.
@@ -74,7 +74,7 @@ void Hugged::hugLoop() {
     }
 
     // Measuring quality
-    if (hugs == true && range < 100) {
+    if (hugState == true && range < 100) {
       hugQuality += 1;
       heart->increase();
       Serial.println("Hug Quality increase");
@@ -82,7 +82,7 @@ void Hugged::hugLoop() {
       return;
     }
 
-    if (hugs == true) {
+    if (hugState == true) {
       hugExpiry += 1;
       Serial.println("Expiry Timeout Increasing");
       huggedTime = timeNow + 25;
@@ -90,9 +90,9 @@ void Hugged::hugLoop() {
     }
 
     // I've been hugged!
-    if (hugTicks >= 7 && hugs == false)
+    if (hugTicks >= 7 && hugState == false)
     {
-      hugs = true;
+      hugState = true;
       heart->reset();
       Serial.println("I've been hugged <3");
       return;
@@ -136,5 +136,5 @@ void Hugged::hugLoop() {
 }
 
 bool Hugged::hugged() {
-  return hugs;
+  return hugState;
 }
