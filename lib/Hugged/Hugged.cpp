@@ -72,9 +72,10 @@ void Hugged::hugLoop() {
       Serial.println("Hug cleared");
       delay(7000);
       heart->reset();
-      // This is an awful hack, until I figure out why `hugs` reverts to true
-      // on the next loop.
-      // ESP.restart();
+      // This is an awful hack, until I figure out why `hugState` reverts to true
+      // on the next loop. Much deliberation has been had as to the cause, but
+      // there is no logical reason for why!
+      ESP.restart();
     } else if (range < 100) {
       hugQuality += 1;
       heart->increase();
@@ -88,6 +89,8 @@ void Hugged::hugLoop() {
   } else {
     // hugState is false
     // Note: Once hugTicks is over 7, it can never decrease!
+    // Todo: Refactor stuck logic, since adding the range
+    //       sensor it has never worked.
     if (hugTicks >= 200) {
       // Oh noes I'm potentially stuck in a hug!
       // (more likely my badge is obstructed... or my hacky code)
