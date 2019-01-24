@@ -44,19 +44,24 @@ void Hugged::hugLoop() {
     return;
 
   unsigned long timeNow = millis();
-  if (timeNow >= huggedTime) {
-    int range = sensor->readRangeContinuousMillimeters();
-    lastRange = range;
+  if (timeNow < huggedTime) {
+    return;
+  }
 
-    if (sensor->timeoutOccurred()) 
-    { 
-      Serial.print(" TIMEOUT");
-      huggedTime = timeNow + 50;
-      return;
-    }
+  // This causes a bug later on!
+  int range = sensor->readRangeContinuousMillimeters();
+  lastRange = range;
 
-    // Publish and Clear Hug
-    if (hugState == true && hugExpiry >= 10) {
+  if (sensor->timeoutOccurred())
+  {
+    Serial.print(" TIMEOUT");
+    huggedTime = timeNow + 50;
+    return;
+  }
+
+  // Publish and Clear Hug
+  if (hugState) {
+    if (hugExpiry >= 10) {
       Serial.print("Hug Quality (");
       Serial.print(hugQuality);
       Serial.println(") Measured and Published");
@@ -69,69 +74,58 @@ void Hugged::hugLoop() {
       heart->reset();
       // This is an awful hack, until I figure out why `hugs` reverts to true
       // on the next loop.
-      ESP.restart();
-      return;
-    }
-
-    // Measuring quality
-    if (hugState == true && range < 100) {
+      // ESP.restart();
+    } else if (range < 100) {
       hugQuality += 1;
       heart->increase();
       Serial.println("Hug Quality increase");
       huggedTime = timeNow + 25;
-      return;
-    }
-
-    if (hugState == true) {
+    } else {
       hugExpiry += 1;
       Serial.println("Expiry Timeout Increasing");
       huggedTime = timeNow + 25;
-      return;
     }
-
-    // I've been hugged!
-    if (hugTicks >= 7 && hugState == false)
-    {
-      hugState = true;
-      heart->reset();
-      Serial.println("I've been hugged <3");
-      return;
-    }
-
-    // Oh noes I'm potentially stuck in a hug!
-    // (more likely my badge is obstructed... or my hacky code)
-    if (hugTicks == 200)
-    {
+  } else {
+    // hugState is false
+    // Note: Once hugTicks is over 7, it can never decrease!
+    if (hugTicks >= 200) {
+      // Oh noes I'm potentially stuck in a hug!
+      // (more likely my badge is obstructed... or my hacky code)
       hugStuck = true;
       Serial.println("Ack! I'm stuck!");
       client->publish("/stuck", "true");
-      return;
-    }
+    } else if (hugTicks >= 7) {
+      hugState = true;
+      heart->reset();
+      Serial.println("I've been hugged <3");
+    } else {
 
-    if (range < 200 && lastRange + 10 >= range && hugsPotential < 6) {
-      hugsPotential +=1;
-      Serial.println("Pontential Hug tick increase");
-    }
-    
-    if( range > 200 && hugsPotential > 0)
-    {
-      Serial.println("Pontential Hug tick decrease");
-      hugsPotential -= 1;
-    }
+      // `lastRange + 10 >= range` is always true because `range == lastRange`
+      if (range < 200 && lastRange + 10 >= range && hugsPotential < 6) {
+        hugsPotential +=1;
+        Serial.println("Pontential Hug tick increase");
+      }
 
-    if( range < 100 && hugsPotential > 5)
-    {
-      Serial.println("Hug tick increase");
-      hugTicks += 1;
+      if( range > 200 && hugsPotential > 0)
+      {
+        Serial.println("Pontential Hug tick decrease");
+        hugsPotential -= 1;
+      }
 
+      if( range < 100 && hugsPotential > 5)
+      {
+        Serial.println("Hug tick increase");
+        hugTicks += 1;
+
+      }
+      if( range > 150 && hugTicks > 0)
+      {
+        Serial.println("Hug tick decrease");
+        hugTicks -= 1;
+      }
+      //Serial.println("tick end");
+      huggedTime = timeNow + 25;
     }
-    if( range > 150 && hugTicks > 0)
-    {
-      Serial.println("Hug tick decrease");
-      hugTicks -= 1;
-    }
-    //Serial.println("tick end");
-    huggedTime = timeNow + 25;
   }
 }
 
