@@ -71,7 +71,7 @@ def on_message(client, userdata, msg):
         if hug_quality >= 0:
             hug_message = HUG_MESSAGES[hug_quality]
 
-        msg = "Nawww I've been #hugged at #lca2019 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
+        msg = "Nawww I've been #hugged at #lca2020 - {} (Hug Detector @ [{:02}:{:02}:{:02}])".format(hug_message,time.hour,time.minute,time.second)
         print("Quality Received: {} - Quality_Adjusted: {} - Message sent: {}".format(payload_string ,hug_quality, msg))
         Client(userkey).send_message(msg, title="Hug Detector", sound='magic')
         if not TEST_MODE:
