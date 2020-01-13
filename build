@@ -3,15 +3,15 @@
 `aws ecr get-login --no-include-email`
 # Been Hugged
 (cd beenhugged && docker build --rm -t been_hugged/beenhugged -f Dockerfile .)
-docker tag been_hugged/beenhugged:latest ${ecs_repo}/beenhugged:latest
-docker push ${ecs_repo}/beenhugged:latest
+docker tag been_hugged/beenhugged:latest ${ECS_REPO}/beenhugged:latest
+docker push ${ECS_REPO}/beenhugged:latest
 
 # Heartbeat
 (cd heartbeat && docker build --rm -t been_hugged/heartbeat -f Dockerfile .)
-docker tag been_hugged/heartbeat:latest ${ecs_repo}/heartbeat:latest
-docker push ${ecs_repo}/heartbeat:latest
+docker tag been_hugged/heartbeat:latest ${ECS_REPO}/heartbeat:latest
+docker push ${ECS_REPO}/heartbeat:latest
 
 # Mosquitto
 (cd mosquitto && docker build --rm -t been_hugged/mosquitto -f Dockerfile .)
-docker tag been_hugged/mosquitto:latest ${ecs_repo}/mosquitto:latest
-docker push ${ecs_repo}/mosquitto:latest
+docker tag been_hugged/mosquitto:latest ${ECS_REPO}/mosquitto:latest
+docker push ${ECS_REPO}/mosquitto:latest

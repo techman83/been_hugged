@@ -279,7 +279,8 @@ containers = [
         'image': 'beenhugged',
         'secrets': [
             'twitter_ckey', 'twitter_csecret', 'twitter_akey',
-            'twitter_asecret', 'mqtt_user', 'mqtt_pass'
+            'twitter_asecret', 'mqtt_user', 'mqtt_pass',
+            'pushover_user', 'pushover_key'
         ],
         'env': [
             ('TEST_MODE', TEST_MODE),

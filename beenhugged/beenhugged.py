@@ -10,15 +10,15 @@ QUALITY_MODIFIER = int(os.environ.get("QUALITY_MODIFIER",0))
 
 # Twitter Credentials
 api = twitter.Api(
-    consumer_key=os.environ.get('twitter_ckey'),
-    consumer_secret=os.environ.get('twitter_csecret'),
-    access_token_key=os.environ.get('twitter_akey'),
-    access_token_secret=os.environ.get('twitter_asecret')
+    consumer_key=os.environ.get('TWITTER_CKEY'),
+    consumer_secret=os.environ.get('TWITTER_CSECRET'),
+    access_token_key=os.environ.get('TWITTER_AKEY'),
+    access_token_secret=os.environ.get('TWITTER_ASECRET')
 )
 
 # Pushover Credentials
-init(os.environ.get('pushover_token'))
-userkey = os.environ.get('pushover_key')
+init(os.environ.get('PUSHOVER_TOKEN'))
+userkey = os.environ.get('PUSHOVER_KEY')
 
 HUG_MESSAGES = (
     "Hug Achieved!",
@@ -48,7 +48,7 @@ def main():
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.username_pw_set(os.environ.get('mqtt_user'), os.environ.get('mqtt_pass'))
+    client.username_pw_set(os.environ.get('MQTT_USER'), os.environ.get('MQTT_PASS'))
     client.connect(os.environ.get('MQTT_HOST','mosquitto'), int(os.environ.get('MQTT_PORT', 1883)), 60)
     client.loop_forever()
 
