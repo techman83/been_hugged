@@ -8,12 +8,14 @@
 Hugged::Hugged() {
   this->client        = nullptr;
   this->sensor        = nullptr;
-  this->heart         = nullptr;
+  this->strip         = nullptr;
   this->huggedTime    = 0;
   this->hugTicks      = 0;
   this->hugsPotential = 0;
   this->hugQuality    = 0;
   this->lastRange     = 0;
+  this->pixels        = 72;
+  this->color         = 0;
   this->hugStuck      = false;
   this->hugState      = false;
 }
@@ -32,9 +34,10 @@ Hugged& Hugged::setSensor(VL6180X* sensor) {
   return *this;
 }
 
-Hugged& Hugged::setHeart(DotMatrix_GrowingHeart* heart) {
-  if (heart != nullptr) {
-    this->heart = heart;
+Hugged& Hugged::setStrip(Adafruit_DotStar* strip) {
+  if (strip != nullptr) {
+    this->strip = strip;
+    this->color = strip->Color(255, 0, 0);
   }
   return *this;
 }
@@ -49,7 +52,7 @@ void Hugged::hugLoop() {
   }
 
   // This causes a bug later on!
-  int range = sensor->readRangeContinuousMillimeters();
+  int range = sensor->readRangeSingleMillimeters();
   lastRange = range;
 
   if (sensor->timeoutOccurred())
@@ -64,21 +67,15 @@ void Hugged::hugLoop() {
     if (hugExpiry >= 10) {
       Serial.print("Hug Quality (");
       Serial.print(hugQuality);
-      Serial.println(") Measured and Published");
-      hugState = false;
-      hugsPotential = 0;
-      hugExpiry = 0;
       client->publish("/hugged", String(hugQuality));
+      Serial.println(") Measured and Published");
+      clear_hug();
       Serial.println("Hug cleared");
       delay(7000);
-      heart->reset();
-      // This is an awful hack, until I figure out why `hugState` reverts to true
-      // on the next loop. Much deliberation has been had as to the cause, but
-      // there is no logical reason for why!
-      ESP.restart();
+      clear_strip();
     } else if (range < 100) {
       hugQuality += 1;
-      heart->increase();
+      display_quality();
       Serial.println("Hug Quality increase");
       huggedTime = timeNow + 25;
     } else {
@@ -99,7 +96,7 @@ void Hugged::hugLoop() {
       client->publish("/stuck", "true");
     } else if (hugTicks >= 7) {
       hugState = true;
-      heart->reset();
+      clear_strip();
       Serial.println("I've been hugged <3");
     } else {
 
@@ -134,4 +131,29 @@ void Hugged::hugLoop() {
 
 bool Hugged::hugged() {
   return hugState;
+}
+
+void Hugged::clear_strip() {
+  strip->fill();
+  strip->show();
+}
+
+void Hugged::clear_hug() {
+      hugState = false;
+      hugsPotential = 0;
+      hugExpiry = 0;
+      huggedTime = 0;
+      hugTicks = 0;
+      hugsPotential = 0;
+      hugQuality = 0;
+      lastRange = 0;
+}
+
+void Hugged::display_quality() {
+  uint16_t display = hugQuality * 5;
+  if ( display > pixels ) {
+    display = pixels;
+  }
+  strip->fill(color, 0, display);
+  strip->show();
 }

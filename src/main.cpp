@@ -4,13 +4,13 @@
  *
  */
 
+#include <Wire.h>
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
 #include <VL6180X.h>
-#include <Adafruit_DotStarMatrix.h>
-#include <DotMatrix_GrowingHeart.h>
-#include <SPI.h>
 #include <Hugged.h>
+#include <TinyPICO.h>
+#include <Adafruit_DotStar.h>
 
 const char ssid[] = WIFI_SSID;
 const char pass[] = WIFI_PASS;
@@ -18,29 +18,26 @@ const char pass[] = WIFI_PASS;
 WiFiClientSecure net;
 MQTTClient client;
 VL6180X sensor;
+TinyPICO tp = TinyPICO();
 
-int ledPin = 22;
-
-Adafruit_DotStarMatrix matrix = Adafruit_DotStarMatrix(
-  8, 8,  // Width, height
-  23, 18, // Data pin, clock pin
-  DS_MATRIX_BOTTOM  + DS_MATRIX_LEFT +
-  DS_MATRIX_ROWS + DS_MATRIX_PROGRESSIVE,
-  DOTSTAR_BRG);
+#define NUMPIXELS 72 // Number of LEDs in strip
+#define DATAPIN    23
+#define CLOCKPIN   18
+Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BGR);
 
 // Feedback loop
-uint16_t PIXELS = matrix.numPixels();
+uint16_t PIXELS = 72;
 uint16_t CUR_INDEX = 0;
-uint32_t RED = matrix.Color(255, 0, 0);
-uint32_t BLUE = matrix.Color(0, 200, 0);
-uint32_t PINK = matrix.Color(200, 200, 0);
-uint32_t OFF = matrix.Color(0, 0, 0); //BLACK
+uint32_t RED = strip.Color(255, 0, 0);
+uint32_t BLUE = strip.Color(0, 200, 0);
+uint32_t PINK = strip.Color(200, 200, 0);
+uint32_t OFF = strip.Color(0, 0, 0); //BLACK
 
-DotMatrix_GrowingHeart heart;
 Hugged hugged;
 
 void sensor_init()
 {
+  Wire.begin();
   sensor.init();
   sensor.configureDefault();
   Serial.println( "Sensor Config..." );
@@ -64,14 +61,15 @@ void sensor_init()
 }
 
 bool pixelMove(uint32_t colour) {
-  matrix.setPixelColor(CUR_INDEX, OFF);
+  strip.setPixelColor(CUR_INDEX, OFF);
   if (++CUR_INDEX >= PIXELS) {
     CUR_INDEX = 0;
-    matrix.show();
+    strip.setPixelColor(CUR_INDEX, colour);
+    strip.show();
     return false;
   }
-  matrix.setPixelColor(CUR_INDEX, colour);
-  matrix.show();
+  strip.setPixelColor(CUR_INDEX, colour);
+  strip.show();
   return true;
 }
 
@@ -80,7 +78,7 @@ void connect() {
   Serial.print(MQTT_USER);
   Serial.print("\nconnecting...");
   int failure = 0;
-  digitalWrite(ledPin, LOW);
+  tp.DotStar_CycleColor(25);
   while (!client.connect(CLIENT_ID,MQTT_USER,MQTT_PASS)) {
     pixelMove(PINK);
     Serial.print(".");
@@ -93,8 +91,9 @@ void connect() {
     }
   }
 
-  matrix.setPixelColor(CUR_INDEX, OFF);
-  matrix.show();
+  tp.DotStar_SetPower( false );
+  strip.fill();
+  strip.show();
   String conMessage = String(CLIENT_ID) + " connected";
   client.publish("/test", conMessage.c_str() );
   client.subscribe("/heartbeat");
@@ -115,8 +114,8 @@ void wifi_connect() {
     delay(1000);
   }
 
-  matrix.setPixelColor(CUR_INDEX, OFF);
-  matrix.show();
+  strip.fill();
+  strip.show();
   Serial.println("WiFi connected");
 }
 
@@ -131,8 +130,8 @@ void messageReceived(String &topic, String &payload) {
 
 void setup() {
   Serial.begin(115200);
-  heart.setMatrix(&matrix)
-    .matrixBegin();
+  strip.begin();
+  strip.show();
   client.begin(MQTT, 8883, net);
   client.onMessage(messageReceived);
 
@@ -143,11 +142,12 @@ void setup() {
   while (pixelMove(RED)) {
     delay(25);
   }
-  heart.reset();
+  strip.fill();
+  strip.show();
 
   hugged.setHugged(&client)
     .setSensor(&sensor)
-    .setHeart(&heart);
+    .setStrip(&strip);
 
   Serial.println("Ready");
 }
