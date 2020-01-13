@@ -2,6 +2,7 @@
 *.swp
 .pioenvs/*
 .piolibdeps/*
+.pio/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
