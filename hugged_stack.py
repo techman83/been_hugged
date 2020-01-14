@@ -4,7 +4,7 @@ from troposphere import Base64, GetAtt
 from troposphere import Join, Sub
 from troposphere import Ref, Tags, Template
 from troposphere.cloudformation import Init, InitFile, InitFiles, \
-    InitConfig, InitService, Metadata
+    InitConfig, InitService
 from troposphere.iam import Role, Policy
 from troposphere.iam import InstanceProfile
 from troposphere.route53 import RecordSetType
@@ -20,7 +20,8 @@ EMAIL = os.environ.get('HUGGED_EMAIL', False)
 SECURITY_GROUP = 'sg-08f2b0b8afa5fa12f'
 TEST_MODE = '0'
 TIMEZONE = 'Australia/Queensland'
-QUALITY_MODIFIER = '10'
+QUALITY_MODIFIER = '12'
+INTERVAL = '2'
 
 t = Template()
 
@@ -298,7 +299,7 @@ containers = [
             'mqtt_user', 'mqtt_pass'
         ],
         'env': [
-            ('INTERVAL', '5'),
+            ('INTERVAL', INTERVAL),
         ],
         'depends': ['mosquitto']
     },
