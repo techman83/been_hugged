@@ -4,7 +4,7 @@ from os.path import expanduser
 import twitter, configparser, datetime, pytz, os
 from pushover import init, Client
 
-TEST_MODE = os.environ.get("TEST_MODE", 0)
+TEST_MODE = int(os.environ.get("TEST_MODE", 0))
 TWITTER_HANDLE = os.environ.get("TWITTER_HANDLE")
 QUALITY_MODIFIER = int(os.environ.get("QUALITY_MODIFIER",0))
 
@@ -17,8 +17,8 @@ api = twitter.Api(
 )
 
 # Pushover Credentials
-init(os.environ.get('PUSHOVER_TOKEN'))
-userkey = os.environ.get('PUSHOVER_KEY')
+init(os.environ.get('PUSHOVER_KEY'))
+userkey = os.environ.get('PUSHOVER_USER')
 
 HUG_MESSAGES = (
     "Hug Achieved!",

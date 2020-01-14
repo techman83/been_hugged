@@ -18,8 +18,9 @@ ZONE_ID = os.environ.get('HUGGED_ZONEID', False)
 FQDN = 'hugged.techieman.net'
 EMAIL = os.environ.get('HUGGED_EMAIL', False)
 SECURITY_GROUP = 'sg-08f2b0b8afa5fa12f'
-TEST_MODE = '1'
+TEST_MODE = '0'
 TIMEZONE = 'Australia/Queensland'
+QUALITY_MODIFIER = '10'
 
 t = Template()
 
@@ -285,7 +286,7 @@ containers = [
         'env': [
             ('TEST_MODE', TEST_MODE),
             ('TWITTER_HANDLE', 'techman83'),
-            ('QUALITY_MODIFIER', '10'),
+            ('QUALITY_MODIFIER', QUALITY_MODIFIER),
             ('TIMEZONE', TIMEZONE),
         ],
         'depends': ['mosquitto']
