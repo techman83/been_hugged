@@ -2,20 +2,32 @@
 
 from setuptools import setup, find_packages
 
-setup(name='beenhugged',
-    version='1.0',
-    description='Backend Hug Tweeter',
-    author='Leon Wright',
-    author_email='techman83@gmail.com',
-    packages=find_packages(),
-    scripts=[
-        "beenhugged.py",
-    ],
-    install_requires=[
-        "python-pushover",
-        "python-twitter",
-        "paho-mqtt",
-        "pytz",
-    ]
-)
-
+setup(name='lcahugs',
+      version='1.1',
+      description='All things #lcahugs',
+      author='Leon Wright',
+      author_email='techman83@gmail.com',
+      packages=find_packages(),
+      entry_points={
+          'console_scripts': [
+              'swagbadge=lcahugs.cli:swagbadge',
+              'virtualbadge=lcahugs.cli:virtualbadge',
+              'hugdetector=lcahugs.cli:hugdetector',
+          ],
+      },
+      install_requires=[
+          "click",
+          "python-pushover",
+          "tweepy",
+          "redis",
+          "paho-mqtt",
+          "pytz",
+      ],
+      extras_require={
+          'development': [
+              'pylint',
+              'autopep8',
+              'mypy',
+          ],
+      }
+      )
